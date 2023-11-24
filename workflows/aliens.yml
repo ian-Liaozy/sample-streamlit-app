@@ -1,0 +1,24 @@
+app:
+  data: aliens
+  query: aliens
+embeddings:
+  path: sentence-transformers/nli-mpnet-base-v2
+tabular:
+  idcolumn: id
+  textcolumns:
+  - title
+workflow:
+  index:
+    tasks:
+    - batch: false
+      extract:
+      - feed
+      - entry
+      method: get
+      params:
+        search_query: null
+      task: service
+      url: http://export.arxiv.org/api/query?max_results=50
+    - action: tabular
+    - action: index
+writable: true

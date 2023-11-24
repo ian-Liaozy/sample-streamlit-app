@@ -1,0 +1,17 @@
+app:
+  data: https://github.com/neuml/txtai
+  query: null
+summary:
+  path: sshleifer/distilbart-cnn-12-6
+textractor:
+  join: true
+  lines: false
+  minlength: 100
+  paragraphs: true
+  sentences: false
+workflow:
+  summary:
+    tasks:
+    - action: textractor
+      task: url
+    - action: summary
