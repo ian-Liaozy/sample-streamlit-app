@@ -15,6 +15,10 @@ from txtai.embeddings import Embeddings
 import pandas as pd
 import re
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
 
 def get_data():
     data = []
@@ -25,6 +29,10 @@ def get_data():
         title = str(index+1) + ". " + re.sub('[()]', '', str(row['title']))
         data.append({"index": index, "abstract": abstract, "title": title, "link": row['document_link']})
     return data
+
+def get_pdf_data():
+    pdf_data = []
+    
 
 class Application:
     """
@@ -58,7 +66,7 @@ class Application:
         data = get_data()
 
         # data = st.text_area("Data", value="\n".join(data))
-        st.text_area("Source Papers", value='\n'.join(row['title'] for row in data))
+        st.text_area("Source Papers", value='\n'.join(row['title'] for row in data), key="source_papers_1")
         query = st.text_input("Query")
 
         # data = data.split("\n")
@@ -71,6 +79,34 @@ class Application:
             top_list = self.embeddings.similarity(query, content_data)[:5]
             for uid, score in top_list:
                 st.write("Abstract: ", content_data[uid], "\n Score = ", score, "\n", link_data[uid])
+        
+        st.title("Keyword Based Similarity Search")
+        st.markdown("This application runs a basic similarity search that identifies the best matching row for a query based on keywords.")
+        data = get_data()
+        # Second text area
+        st.text_area("Source Papers", value='\n'.join(row['title'] for row in data), key="source_papers_2")
+        # Keyword input
+        keyword = st.text_input("Enter a keyword for search", key="keyword_input")        
+        content_data = [row['abstract'] for row in data]
+        link_data = [row['link'] for row in data]
+        # Process search
+        if st.button("Find Similar Documents"):
+            if keyword:
+                vectorizer = TfidfVectorizer(stop_words='english')
+                tfidf_matrix = vectorizer.fit_transform(content_data)
+                keyword_vector = vectorizer.transform([keyword])
+                cosine_similarities = cosine_similarity(keyword_vector, tfidf_matrix).flatten()
+                top_5_idx = np.argsort(cosine_similarities)[-5:]
+                top_5_sorted_idx = sorted(top_5_idx, key=lambda i: cosine_similarities[i], reverse=True)
+
+                st.write("Top 5 similar documents (by index):")
+                for idx in top_5_sorted_idx:
+                    st.write("Abstract: ", content_data[idx], "\n Score = ", cosine_similarities[idx], "\n", link_data[idx])
+
+            else:
+                st.warning("Please enter a keyword")
+
+
 
 
 @st.cache_resource(ttl=60 * 60, max_entries=3, show_spinner=False)
