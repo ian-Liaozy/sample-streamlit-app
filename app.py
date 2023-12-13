@@ -21,15 +21,21 @@ import numpy as np
 
 
 def get_data():
-    data = []
+    # data = []
+    title_data = []
+    content_data = []
+    link_data = []
     # df = pd.read_csv('https://raw.githubusercontent.com/Anway-Agte/PA-Search-Engine/ai-search/PA_LENR/LENR_metadata_csv.csv', usecols=['document_link', 'abstract', 'title'])
-    df = pd.read_csv('https://raw.githubusercontent.com/Anway-Agte/PA-Search-Engine/main/PA_LENR/data%20(2).csv', usecols=['document_link', 'abstract', 'title'])
+    df = pd.read_csv('https://raw.githubusercontent.com/Anway-Agte/PA-Search-Engine/main/PA_LENR/data%20(2).csv', usecols=['document_link', 'abstract', 'title'], nrows=1000)
 
     for index, row in df.iterrows():
         abstract = re.sub('[()]', '', str(row['abstract']))
         title = str(index+1) + ". " + re.sub('[()]', '', str(row['title']))
-        data.append({"index": index, "abstract": abstract, "title": title, "link": row['document_link']})
-    return data
+        # data.append({"index": index, "abstract": abstract, "title": title, "link": row['document_link']})
+        content_data.append(abstract)
+        link_data.append(row['document_link'])
+        title_data.append(title)
+    return content_data, link_data, title_data
 
 def get_pdf_data():
     pdf_data = []
@@ -52,27 +58,13 @@ class Application:
         """
         Runs a Streamlit application.
         """
+        content_data, link_data, title_data = get_data()
 
-        st.title("Similarity Search")
+
+        st.title("Semantic Based Similarity Search")
         st.markdown("This application runs a basic similarity search that identifies the best matching row for a query.")
-
-        # data = [
-        #     "US tops 5 million confirmed virus cases",
-        #     "Canada's last fully intact ice shelf has suddenly collapsed, forming a Manhattan-sized iceberg",
-        #     "Beijing mobilises invasion craft along coast as Taiwan tensions escalate",
-        #     "The National Park Service warns against sacrificing slower friends in a bear attack",
-        #     "Maine man wins $1M from $25 lottery ticket",
-        #     "Make huge profits without work, earn up to $100,000 a day",
-        # ]
-        data = get_data()
-
-        # data = st.text_area("Data", value="\n".join(data))
-        st.text_area("Source Papers", value='\n'.join(row['title'] for row in data), key="source_papers_1")
+        st.text_area("Source Papers", value='\n'.join(title_data), key="source_papers_1")
         query = st.text_input("Query")
-
-        # data = data.split("\n")
-        content_data = [row['abstract'] for row in data]
-        link_data = [row['link'] for row in data]
 
         if query:
             # Get index of best section that best matches query
@@ -80,18 +72,15 @@ class Application:
             top_list = self.embeddings.similarity(query, content_data)[:5]
             for uid, score in top_list:
                 st.write("Abstract: ", content_data[uid], "\n Score = ", score, "\n", link_data[uid])
-        
+
+
         st.title("Keyword Based Similarity Search")
         st.markdown("This application runs a basic similarity search that identifies the best matching row for a query based on keywords.")
-        data = get_data()
-        # Second text area
-        st.text_area("Source Papers", value='\n'.join(row['title'] for row in data), key="source_papers_2")
-        # Keyword input
+        st.text_area("Source Papers", value='\n'.join(title_data), key="source_papers_2")
         keyword = st.text_input("Enter a keyword for search", key="keyword_input")        
-        content_data = [row['abstract'] for row in data]
-        link_data = [row['link'] for row in data]
-        # Process search
+
         if st.button("Find Similar Documents"):
+
             if keyword:
                 vectorizer = TfidfVectorizer(stop_words='english')
                 tfidf_matrix = vectorizer.fit_transform(content_data)
@@ -103,9 +92,19 @@ class Application:
                 st.write("Top 5 similar documents (by index):")
                 for idx in top_5_sorted_idx:
                     st.write("Abstract: ", content_data[idx], "\n Score = ", cosine_similarities[idx], "\n", link_data[idx])
+            
 
             else:
-                st.warning("Please enter a keyword")
+                st.warning("Please enter the query or keyword for search")
+
+        # data = get_data()
+        # Second text area
+        # Keyword input
+        # content_data = [row['abstract'] for row in data]
+        # link_data = [row['link'] for row in data]
+        # Process search
+        # if st.button("Find Similar Documents"):
+            
 
 
 
