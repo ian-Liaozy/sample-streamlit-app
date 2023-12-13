@@ -22,8 +22,8 @@ import numpy as np
 
 def get_data():
     data = []
-    df = pd.read_csv('https://raw.githubusercontent.com/Anway-Agte/PA-Search-Engine/ai-search/PA_LENR/LENR_metadata_csv.csv', usecols=['document_link', 'abstract', 'title'])
-
+    # df = pd.read_csv('https://raw.githubusercontent.com/Anway-Agte/PA-Search-Engine/ai-search/PA_LENR/LENR_metadata_csv.csv', usecols=['document_link', 'abstract', 'title'], nrows=448)
+    df = pd.read_csv('https://raw.githubusercontent.com/Anway-Agte/PA-Search-Engine/main/PA_LENR/data%20(2).csv', usecols=['document_link', 'abstract', 'title'], nrows=400)
     for index, row in df.iterrows():
         abstract = re.sub('[()]', '', str(row['abstract']))
         title = str(index+1) + ". " + re.sub('[()]', '', str(row['title']))
@@ -52,8 +52,8 @@ class Application:
         Runs a Streamlit application.
         """
 
-        st.title("Similarity Search")
-        st.markdown("This application runs a basic similarity search that identifies the best matching row for a query.")
+        st.title("Semantic Based Similarity Search")
+        st.markdown("This application runs a Semantic Based similarity search that identifies the best matching paper for a query.")
 
         # data = [
         #     "US tops 5 million confirmed virus cases",
@@ -81,12 +81,12 @@ class Application:
                 st.write("Abstract: ", content_data[uid], "\n Score = ", score, "\n", link_data[uid])
         
         st.title("Keyword Based Similarity Search")
-        st.markdown("This application runs a basic similarity search that identifies the best matching row for a query based on keywords.")
+        st.markdown("This application runs a Keyword Based similarity search that identifies the best matching paper for a query.")
         data = get_data()
         # Second text area
         st.text_area("Source Papers", value='\n'.join(row['title'] for row in data), key="source_papers_2")
         # Keyword input
-        keyword = st.text_input("Enter a keyword for search", key="keyword_input")        
+        keyword = st.text_input("Enter keywords to search", key="keyword_input")        
         content_data = [row['abstract'] for row in data]
         link_data = [row['link'] for row in data]
         # Process search
@@ -103,8 +103,6 @@ class Application:
                 for idx in top_5_sorted_idx:
                     st.write("Abstract: ", content_data[idx], "\n Score = ", cosine_similarities[idx], "\n", link_data[idx])
 
-            else:
-                st.warning("Please enter a keyword")
 
 
 
