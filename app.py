@@ -30,6 +30,7 @@ def get_data():
     # df = pd.read_csv('https://raw.githubusercontent.com/Anway-Agte/PA-Search-Engine/ai-search/PA_LENR/LENR_metadata_csv.csv', usecols=['document_link', 'abstract', 'title'])
     df = pd.read_csv('https://raw.githubusercontent.com/Anway-Agte/PA-Search-Engine/main/PA_LENR/data%20(2).csv', usecols=['document_link', 'abstract', 'title'], nrows=1000)
 
+
     for index, row in df.iterrows():
         abstract = re.sub('[()]', '', str(row['abstract']))
         title = str(index+1) + ". " + re.sub('[()]', '', str(row['title']))
@@ -42,6 +43,7 @@ def get_data():
 def get_pdf_data():
     pdf_data = []
     
+
 
 class Application:
     """
@@ -110,7 +112,6 @@ class Application:
                 for idx in top_5_sorted_idx:
                     st.write("Abstract: ", content_data[idx], "\n Score = ", cosine_similarities[idx], "\n", link_data[idx])
             
-
             else:
                 st.warning("Please enter the query or keyword for search")
 
@@ -126,13 +127,15 @@ class Application:
 
 
 
+
 @st.cache_resource(ttl=60 * 60, max_entries=3, show_spinner=False)
 def create():
     """
     Creates and caches a Streamlit application.
 
     Returns:
-        Applicationxdcs
+        Application
+
     """
 
     return Application()
