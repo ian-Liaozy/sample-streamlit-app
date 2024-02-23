@@ -19,7 +19,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
-from elasticsearch import Elasticsearch
+# from elasticsearch import Elasticsearch
 
 
 def get_data():
@@ -57,18 +57,18 @@ class Application:
 
         # Create embeddings model, backed by sentence-transformers & transformers
         self.embeddings = Embeddings({"path": "sentence-transformers/all-MiniLM-L6-v2"})
-        self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        # self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 
-    def get_data_from_es(self):
-        # Query Elasticsearch to get documents
-        response = self.es.search(index="papers_index", body={"query": {"match_all": {}}})
-        titles, abstracts, links = [], [], []
-        for hit in response['hits']['hits']:
-            source = hit["_source"]
-            titles.append(source["title"])
-            abstracts.append(source["abstract"])
-            links.append(source["link"])
-        return abstracts, links, titles
+    # def get_data_from_es(self):
+    #     # Query Elasticsearch to get documents
+    #     response = self.es.search(index="papers_index", body={"query": {"match_all": {}}})
+    #     titles, abstracts, links = [], [], []
+    #     for hit in response['hits']['hits']:
+    #         source = hit["_source"]
+    #         titles.append(source["title"])
+    #         abstracts.append(source["abstract"])
+    #         links.append(source["link"])
+    #     return abstracts, links, titles
 
 
     def run(self):
