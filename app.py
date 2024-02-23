@@ -15,16 +15,35 @@ from txtai.embeddings import Embeddings
 import pandas as pd
 import re
 
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+from elasticsearch import Elasticsearch
+
 
 def get_data():
-    data = []
-    df = pd.read_csv('https://raw.githubusercontent.com/Anway-Agte/PA-Search-Engine/ai-search/PA_LENR/LENR_metadata_csv.csv', usecols=['document_link', 'abstract', 'title'])
+    # data = []
+    title_data = []
+    content_data = []
+    link_data = []
+    # df = pd.read_csv('https://raw.githubusercontent.com/Anway-Agte/PA-Search-Engine/ai-search/PA_LENR/LENR_metadata_csv.csv', usecols=['document_link', 'abstract', 'title'])
+    df = pd.read_csv('https://raw.githubusercontent.com/Anway-Agte/PA-Search-Engine/main/PA_LENR/data%20(2).csv', usecols=['document_link', 'abstract', 'title'], nrows=1000)
+
 
     for index, row in df.iterrows():
         abstract = re.sub('[()]', '', str(row['abstract']))
         title = str(index+1) + ". " + re.sub('[()]', '', str(row['title']))
-        data.append({"index": index, "abstract": abstract, "title": title, "link": row['document_link']})
-    return data
+        # data.append({"index": index, "abstract": abstract, "title": title, "link": row['document_link']})
+        content_data.append(abstract)
+        link_data.append(row['document_link'])
+        title_data.append(title)
+    return content_data, link_data, title_data
+
+def get_pdf_data():
+    pdf_data = []
+    
+
 
 class Application:
     """
@@ -38,48 +57,75 @@ class Application:
 
         # Create embeddings model, backed by sentence-transformers & transformers
         self.embeddings = Embeddings({"path": "sentence-transformers/all-MiniLM-L6-v2"})
+        self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+
+    def get_data_from_es(self):
+        # Query Elasticsearch to get documents
+        response = self.es.search(index="papers_index", body={"query": {"match_all": {}}})
+        titles, abstracts, links = [], [], []
+        for hit in response['hits']['hits']:
+            source = hit["_source"]
+            titles.append(source["title"])
+            abstracts.append(source["abstract"])
+            links.append(source["link"])
+        return abstracts, links, titles
+
 
     def run(self):
         """
         Runs a Streamlit application.
         """
+        content_data, link_data, title_data = get_data()
+        # content_data, link_data, title_data = self.get_data_from_es()
 
-        st.title("Similarity Search")
+
+
+        st.title("Semantic Based Similarity Search")
         st.markdown("This application runs a basic similarity search that identifies the best matching row for a query.")
-
-        # data = [
-        #     "US tops 5 million confirmed virus cases",
-        #     "Canada's last fully intact ice shelf has suddenly collapsed, forming a Manhattan-sized iceberg",
-        #     "Beijing mobilises invasion craft along coast as Taiwan tensions escalate",
-        #     "The National Park Service warns against sacrificing slower friends in a bear attack",
-        #     "Maine man wins $1M from $25 lottery ticket",
-        #     "Make huge profits without work, earn up to $100,000 a day",
-        # ]
-        data = get_data()
-        
-        # data = ['Isoperibolic electrode calorimetry has demonstrated that four times as much heat is generated at the anode then at the cathode in D2O. Experiments recognized that silica affected some results. Experiments in K2CO3 reported here identifies silica as both a contributor to excess heat generation and as a factor in modifying the cell calibration constant. Implications for cold fusion will be discussed.',
-        #         'In any discussion of the origin, measurement or description of the anomalous power prod ucing process which occurs in connection with the electrochemical loading of deuterium into palladium, knowledge of the thermodynamic behaviour of the system is clearly of importance. More particularly, since the formation of highly l oaded palladium is implicated as a necessary (but itself insufficient) condition for the observation of anomalous power, thermodynamic considerations relating to the attainment of high l oadings are of interest. Here, it is intended to review, at a general level , those aspects of the thermodynamic nature of the system, both equilibrium and non-equilibrium, which appear to bear most directly,on the question of excess power producti on in relati o n to the attai nment of high loadings.',
-        #         'Measurement of electrical resistance is a convenient method for the determination of composition in a number of metal?hydrogen systems. For the fi-phase of the H?Pd system, pertinent data from the literature are employed in order to construct a complete resistance-loading function at 298 K.',
-        #         'U.S. House of Representatives, Hearing before the Committee on Science, Space and Technology on cold fusion, April 1989.',
-        #         'An experimental system has been developed to grow pure titanium films on tungsten substrates. The physicochemical properties of these films have been widely studied and ad hoc samples can be used for Cold Fusion experiments avoiding their contact with atmosphere. Different Cold Fusion experiments are proposed in a new experimental setup that allows deuterium gas loading of the film whi le electrical current is applied through them. Thus, an experimental configuration similar to an electrochemical loading is attained.',
-        #         'A complete set of NRS Nuclear Reactions in Solids experiments has been performed on the Ti-D system checking as triggering mechanisms of these phenomena the imposition of electric fields and the crossing of the cS-E and p-cS phase boundaries. The experiments were accomplished using a high pure iodide-titanium film as the initial metal matrix. Neutron measurements were monitored while doing these experiments and no clear evidence of the nuclear fusion reaction D+D---+3He+n has been detected, the upper detection limit for this reaction being lamda = 3 x 10^-21 f/pds.',
-        #         'Abstract. -- To study the electron screening of nuclear reactions in metallic environments, angular distributions and thick target yields of the fusion reactions  3He have been measured on deuterons implanted in three different metal targets for beam energies ranging from 5 to 60 keV. The experimentally determined values of the screening energy are about one order of magnitude larger than the value achieved in a gas target experiment and significantly larger than the theoretical predictions. A clear target material dependence of the screening energy has been established.',
-        #         ]
-
-        # data = st.text_area("Data", value="\n".join(data))
-        st.text_area("Source Papers", value='\n'.join(row['title'] for row in data))
+        st.text_area("Source Papers", value='\n'.join(title_data), key="source_papers_1")
         query = st.text_input("Query")
-
-        # data = data.split("\n")
-        content_data = [row['abstract'] for row in data]
-        link_data = [row['link'] for row in data]
 
         if query:
             # Get index of best section that best matches query
             # top 5 results:
-            for i in range(5):
-                uid, score = self.embeddings.similarity(query, content_data)[i]
+            top_list = self.embeddings.similarity(query, content_data)[:5]
+            for uid, score in top_list:
                 st.write("Abstract: ", content_data[uid], "\n Score = ", score, "\n", link_data[uid])
+
+
+        st.title("Keyword Based Similarity Search")
+        st.markdown("This application runs a basic similarity search that identifies the best matching row for a query based on keywords.")
+        st.text_area("Source Papers", value='\n'.join(title_data), key="source_papers_2")
+        keyword = st.text_input("Enter a keyword for search", key="keyword_input")        
+
+        if st.button("Find Similar Documents"):
+
+            if keyword:
+                vectorizer = TfidfVectorizer(stop_words='english')
+                tfidf_matrix = vectorizer.fit_transform(content_data)
+                keyword_vector = vectorizer.transform([keyword])
+                cosine_similarities = cosine_similarity(keyword_vector, tfidf_matrix).flatten()
+                top_5_idx = np.argsort(cosine_similarities)[-5:]
+                top_5_sorted_idx = sorted(top_5_idx, key=lambda i: cosine_similarities[i], reverse=True)
+
+                st.write("Top 5 similar documents (by index):")
+                for idx in top_5_sorted_idx:
+                    st.write("Abstract: ", content_data[idx], "\n Score = ", cosine_similarities[idx], "\n", link_data[idx])
+            
+            else:
+                st.warning("Please enter the query or keyword for search")
+
+        # data = get_data()
+        # Second text area
+        # Keyword input
+        # content_data = [row['abstract'] for row in data]
+        # link_data = [row['link'] for row in data]
+        # Process search
+        # if st.button("Find Similar Documents"):
+            
+
+
+
 
 
 @st.cache_resource(ttl=60 * 60, max_entries=3, show_spinner=False)
@@ -89,6 +135,7 @@ def create():
 
     Returns:
         Application
+
     """
 
     return Application()
