@@ -19,6 +19,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
+from elasticsearch import Elasticsearch
+
 
 def get_data():
     # data = []
@@ -53,12 +55,27 @@ class Application:
 
         # Create embeddings model, backed by sentence-transformers & transformers
         self.embeddings = Embeddings({"path": "sentence-transformers/all-MiniLM-L6-v2"})
+        self.es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+
+    def get_data_from_es(self):
+        # Query Elasticsearch to get documents
+        response = self.es.search(index="papers_index", body={"query": {"match_all": {}}})
+        titles, abstracts, links = [], [], []
+        for hit in response['hits']['hits']:
+            source = hit["_source"]
+            titles.append(source["title"])
+            abstracts.append(source["abstract"])
+            links.append(source["link"])
+        return abstracts, links, titles
+
 
     def run(self):
         """
         Runs a Streamlit application.
         """
         content_data, link_data, title_data = get_data()
+        # content_data, link_data, title_data = self.get_data_from_es()
+
 
 
         st.title("Semantic Based Similarity Search")
@@ -115,7 +132,7 @@ def create():
     Creates and caches a Streamlit application.
 
     Returns:
-        Application
+        Applicationxdcs
     """
 
     return Application()

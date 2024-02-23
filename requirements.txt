@@ -2,3 +2,4 @@ txtai[pipeline,workflow]>=4.0.0
 streamlit==1.28.2
 urllib3
 scikit-learn
+elasticsearch
