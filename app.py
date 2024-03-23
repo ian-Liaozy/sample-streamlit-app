@@ -126,7 +126,7 @@ class Application:
             # top_list = self.embeddings.similarity(query, content_data)[:5]
             top_list = embeddings.search(keyword, 5)
             for idx, result in enumerate(top_list):
-                st.write("Abstract: ", result["text"], "\n Score = ", result["score"], "\n", link_data[int(result["id"])])
+                st.write("Title: ", title_data[int(result["id"])], "\n Abstract: ", result["text"], "\n Score = ", result["score"], "\n", link_data[int(result["id"])])
         else:
             st.warning("Please enter the query or keyword for search")
 
