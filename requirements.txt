@@ -1,5 +1,6 @@
+numpy==1.26.4
+llama-cpp-python==0.1.9
 txtai[pipeline,workflow]>=4.0.0
-streamlit==1.28.2
+streamlit==1.37
 urllib3
-scikit-learn
 elasticsearch
