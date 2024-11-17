@@ -1,8 +1,9 @@
 numpy==1.26.4
 llama-cpp-python==0.1.9
-huggingface-hub==0.20.2
+huggingface-hub==0.21.2
 txtai[pipeline,workflow]
 streamlit==1.37
 urllib3
 elasticsearch
-
+transformers==4.33.2
+accelerate==0.21.0
