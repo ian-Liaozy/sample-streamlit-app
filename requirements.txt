@@ -4,3 +4,4 @@ txtai[pipeline,workflow]>=4.0.0
 streamlit==1.37
 urllib3
 elasticsearch
+huggingface-hub==0.20.2
